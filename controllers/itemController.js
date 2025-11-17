@@ -1,27 +1,40 @@
 // /controllers/itemController.js
 
-
 const { query } = require('../utils/db');
 const htmlRenderer = require('../utils/htmlRenderer');
 
 exports.getDashboard = async (req, res) => {
+    // FIX: Implement Search and Filter (FR-3)
+    const { search, category } = req.query;
+    const user = req.user; 
+
+    let sql = `
+        SELECT i.id, i.title, i.category, i.location, i.image_url, i.date_found, u.name as reported_by
+        FROM items i
+        LEFT JOIN users u ON i.found_by_id = u.id
+        WHERE i.status = 'Lost'
+    `;
+    
+    const params = [];
+
+    if (search) {
+        params.push(`%${search}%`);
+        sql += ` AND (i.title ILIKE $${params.length} OR i.description ILIKE $${params.length})`;
+    }
+
+    if (category) {
+        params.push(category);
+        sql += ` AND i.category = $${params.length}`;
+    }
+
+    sql += ` ORDER BY i.date_found DESC`;
+
     try {
-        // Fetch all items with status 'Lost'
-        const sql = `
-            SELECT i.id, i.title, i.category, i.location, i.image_url, i.date_found, u.name as reported_by
-            FROM items i
-            LEFT JOIN users u ON i.found_by_id = u.id
-            WHERE i.status = 'Lost'
-            ORDER BY i.date_found DESC
-        `;
-        const result = await query(sql);
+        const result = await query(sql, params);
         const items = result.rows;
 
-        // The user object is attached by optionalAuth middleware (or is null)
-        const user = req.user; 
-
-        // Pass the user object to the renderer
-        res.send(htmlRenderer.renderDashboard(items, user)); 
+        // Pass user, search, and category to the renderer
+        res.send(htmlRenderer.renderDashboard(items, user, { search, category })); 
 
     } catch (err) {
         console.error('Error fetching dashboard:', err);
@@ -29,57 +42,45 @@ exports.getDashboard = async (req, res) => {
     }
 };
 
-// ... (handleReportSubmission and getItemDetails remain the same, 
-// they already use req.user which is set by requireAuth in their routes)
-
-exports.handleReportSubmission = async (req, res) => {
-    const { title, description, category, location } = req.body;
-    // req.user.id is guaranteed to exist because of the requireAuth middleware
-    const found_by_id = req.user.id; 
-
-    try {
-        if (!title || !description || !category || !location) {
-            return res.status(400).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">Please fill out all required fields.</p>'));
-        }
-        
-        const imageUrl = `https://via.placeholder.com/150?text=${category.split(' ')[0]}`; // Placeholder
-
-        const sql = `
-            INSERT INTO items (title, description, category, location, image_url, found_by_id)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `;
-        const values = [title, description, category, location, imageUrl, found_by_id];
-
-        await query(sql, values);
-
-        res.redirect('/');
-    } catch (err) {
-        console.error('Error reporting item:', err);
-        res.status(500).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">Database error reporting item.</p>'));
-    }
-};
+// REMOVED: handleReportSubmission
+// This logic is now in adminController.js
 
 exports.getItemDetails = async (req, res) => {
     const itemId = req.params.id;
+    const userId = req.user ? req.user.id : null;
     
     try {
-        const sql = `
+        // 1. Get item details
+        const itemSql = `
             SELECT i.*, u.name as reported_by
             FROM items i
             LEFT JOIN users u ON i.found_by_id = u.id
             WHERE i.id = $1
         `;
-        const result = await query(sql, [itemId]);
-        const item = result.rows[0];
+        const itemResult = await query(itemSql, [itemId]);
+        const item = itemResult.rows[0];
 
         if (!item) {
-            return res.status(404).send(htmlRenderer.getBaseHtml('Not Found', '<h2>Item Not Found</h2>'));
+            return res.status(404).send(htmlRenderer.getBaseHtml('Not Found', '<h2>Item Not Found</h2>', req.user));
+        }
+
+        let userClaim = null;
+        if (userId) {
+            // 2. Get the current user's claim for this item, if it exists
+            const claimSql = `
+                SELECT id, status, justification, pickup_details FROM claims
+                WHERE item_id = $1 AND claimed_by_id = $2
+                ORDER BY date_claimed DESC LIMIT 1
+            `;
+            const claimResult = await query(claimSql, [itemId, userId]);
+            userClaim = claimResult.rows[0]; // Will be undefined if no claim
         }
         
-        res.send(htmlRenderer.renderItemDetails(item, req.user)); 
+        // 3. Render page, passing in the item and the user's specific claim
+        res.send(htmlRenderer.renderItemDetails(item, req.user, userClaim)); 
 
     } catch (err) {
         console.error('Error fetching item details:', err);
-        res.status(500).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">Could not load item details.</p>'));
+        res.status(500).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">Could not load item details.</p>', req.user));
     }
 };

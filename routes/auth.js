@@ -7,7 +7,9 @@ const htmlRenderer = require('../utils/htmlRenderer');
 
 // GET /auth/login - Display Login Form
 router.get('/login', (req, res) => {
-    res.send(htmlRenderer.renderLoginForm());
+    // FIX: Pass the error from query params to the renderer
+    // We pass 'null' for user because they aren't authenticated yet.
+    res.send(htmlRenderer.renderLoginForm(null, req.query.error));
 });
 
 // POST /auth/login - Handle Login Submission
@@ -15,7 +17,8 @@ router.post('/login', authController.login);
 
 // GET /auth/register - Display Registration Form
 router.get('/register', (req, res) => {
-    res.send(htmlRenderer.renderRegisterForm()); 
+    // FIX: Pass the error from query params to the renderer
+    res.send(htmlRenderer.renderRegisterForm(null, req.query.error)); 
 });
 
 // POST /auth/register - Handle Registration Submission

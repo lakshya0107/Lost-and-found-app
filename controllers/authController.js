@@ -14,13 +14,15 @@ exports.login = async (req, res) => {
         const user = userResult.rows[0];
 
         if (!user) {
-            return res.status(400).send(htmlRenderer.getBaseHtml('Login Failed', '<p class="text-red-500">Invalid credentials.</p>'));
+            // FIX: Redirect back to login with an error
+            return res.redirect('/auth/login?error=Invalid credentials');
         }
 
         // 2. Compare password hash
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
-            return res.status(400).send(htmlRenderer.getBaseHtml('Login Failed', '<p class="text-red-500">Invalid credentials.</p>'));
+            // FIX: Redirect back to login with an error
+            return res.redirect('/auth/login?error=Invalid credentials');
         }
 
         // 3. Create and set JWT token
@@ -39,12 +41,24 @@ exports.login = async (req, res) => {
 
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">An error occurred during login.</p>'));
+        // FIX: Redirect back to login with a generic error
+        res.redirect('/auth/login?error=An internal error occurred');
     }
 };
 
 exports.register = async (req, res) => {
-    const { name, email, password, role = 'Student' } = req.body; 
+    // FIX: Read 'role' from the request body
+    const { name, email, password, role } = req.body; 
+    
+    // FIX: Add basic validation
+    if (!name || !email || !password || !role) {
+        return res.redirect('/auth/register?error=All fields are required');
+    }
+    
+    // FIX: Security check to prevent registering as Admin
+    if (role !== 'Student' && role !== 'Faculty') {
+        return res.redirect('/auth/register?error=Invalid role selected');
+    }
 
     try {
         // 1. Hash password
@@ -52,6 +66,7 @@ exports.register = async (req, res) => {
         const password_hash = await bcrypt.hash(password, salt);
 
         // 2. Insert new user into the database
+        // FIX: Pass the 'role' variable to the SQL query
         const sql = 'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id';
         const result = await query(sql, [name, email, password_hash, role]);
         
@@ -62,10 +77,12 @@ exports.register = async (req, res) => {
         res.redirect('/');
     } catch (err) {
         if (err.code === '23505') { // Unique violation (email already exists)
-            return res.status(400).send(htmlRenderer.getBaseHtml('Registration Failed', '<p class="text-red-500">Email already in use.</p>'));
+            // FIX: Redirect back to register with an error
+            return res.redirect('/auth/register?error=Email already in use');
         }
         console.error('Registration error:', err);
-        res.status(500).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">Registration failed.</p>'));
+        // FIX: Redirect back to register with a generic error
+        res.status(500).redirect('/auth/register?error=Registration failed');
     }
 };
 

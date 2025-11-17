@@ -10,6 +10,7 @@ const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');   
 const itemRouter = require('./routes/items');   
 const adminRouter = require('./routes/admin'); 
+const userRouter = require('./routes/user'); // <-- NEW
 
 // Load environment variables from .env file
 dotenv.config();
@@ -43,6 +44,8 @@ app.use('/auth', authRouter);
 app.use('/items', itemRouter); 
 // Admin-specific routes
 app.use('/admin', adminRouter);
+// User-specific routes (e.g., "My Claims")
+app.use('/user', userRouter); // <-- NEW
 
 // --- 404 Error Handler ---
 app.use((req, res) => {
