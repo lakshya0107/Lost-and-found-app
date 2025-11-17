@@ -1,0 +1,35 @@
+# ----------------------------------------------------
+# 🚀 Node.js/Express Ignore File
+# ----------------------------------------------------
+
+# Dependencies
+/node_modules
+/npm-debug.log*
+/yarn-error.log*
+/pnpm-debug.log*
+
+# Build artifacts
+/dist
+/build
+/temp
+/logs
+
+# Environment Variables and Secrets
+# **NEVER COMMIT YOUR SECRETS OR DATABASE CREDENTIALS**
+.env
+.env.development
+.env.production
+
+# Runtime data
+/tmp
+/upload_tmp/
+
+# IDE and OS generated files
+.DS_Store
+.vscode/
+
+# ----------------------------------------------------
+# ⚙️ PostgreSQL/Prisma (Even though you aren't using Prisma,
+# it's good practice to ignore common DB tooling files)
+# ----------------------------------------------------
+/prisma/migrations
