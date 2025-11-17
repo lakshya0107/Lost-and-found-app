@@ -26,12 +26,12 @@ exports.login = async (req, res) => {
         // 3. Create and set JWT token
         const token = createToken(user.id);
         res.cookie('token', token, {
-            httpOnly: true, // Prevents client-side JavaScript access
-            secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
+            maxAge: 24 * 60 * 60 * 1000 
         });
 
-        // 4. Redirect based on role (simple routing for now)
+        // 4. Redirect based on role
         if (user.role === 'Admin') {
             return res.redirect('/admin/dashboard');
         }
@@ -44,8 +44,7 @@ exports.login = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-    // NOTE: This route should typically be restricted or have a secret key for Admin/Faculty roles
-    const { name, email, password, role = 'Student' } = req.body; // Default role to Student
+    const { name, email, password, role = 'Student' } = req.body; 
 
     try {
         // 1. Hash password
@@ -62,7 +61,7 @@ exports.register = async (req, res) => {
 
         res.redirect('/');
     } catch (err) {
-        if (err.code === '23505') { // PostgreSQL code for unique violation (email already exists)
+        if (err.code === '23505') { // Unique violation (email already exists)
             return res.status(400).send(htmlRenderer.getBaseHtml('Registration Failed', '<p class="text-red-500">Email already in use.</p>'));
         }
         console.error('Registration error:', err);
@@ -71,7 +70,6 @@ exports.register = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-    // Clear the JWT cookie
     res.clearCookie('token');
     res.redirect('/');
 };

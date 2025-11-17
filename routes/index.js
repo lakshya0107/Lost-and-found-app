@@ -2,12 +2,13 @@
 
 const express = require('express');
 const router = express.Router();
-const itemController = require('../controllers/itemController'); // Will be created next
+const itemController = require('../controllers/itemController');
+const { optionalAuth } = require('../middleware/optionalAuth'); 
 
-// GET / - Dashboard/Home Page
-router.get('/', itemController.getDashboard);
+// Apply optionalAuth so req.user is set if the user is logged in (otherwise req.user is null)
+router.get('/', optionalAuth, itemController.getDashboard); 
 
-// GET /report - Simple redirect or placeholder (form is under /items/report)
+// GET /report - Redirect to the item reporting form
 router.get('/report', (req, res) => res.redirect('/items/report'));
 
 module.exports = router;

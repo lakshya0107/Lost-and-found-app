@@ -12,7 +12,7 @@ exports.isAdmin = (req, res, next) => {
     res.status(403).send(htmlRenderer.getBaseHtml('Access Denied', body));
 };
 
-// Middleware to check if the user is Admin or Faculty (needed for processing claims)
+// Middleware to check if the user is Admin or Faculty
 exports.isAdminOrFaculty = (req, res, next) => {
     if (req.user && (req.user.role === 'Admin' || req.user.role === 'Faculty')) {
         return next();

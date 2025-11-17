@@ -1,5 +1,6 @@
 // /controllers/itemController.js
 
+
 const { query } = require('../utils/db');
 const htmlRenderer = require('../utils/htmlRenderer');
 
@@ -16,10 +17,10 @@ exports.getDashboard = async (req, res) => {
         const result = await query(sql);
         const items = result.rows;
 
-        // Use req.user (attached by requireAuth middleware) to customize the dashboard
-        const user = req.user || null; 
+        // The user object is attached by optionalAuth middleware (or is null)
+        const user = req.user; 
 
-        // NOTE: You must implement htmlRenderer.renderDashboard to handle item display
+        // Pass the user object to the renderer
         res.send(htmlRenderer.renderDashboard(items, user)); 
 
     } catch (err) {
@@ -27,6 +28,9 @@ exports.getDashboard = async (req, res) => {
         res.status(500).send(htmlRenderer.getBaseHtml('Error', '<p class="text-red-500">Could not load items.</p>'));
     }
 };
+
+// ... (handleReportSubmission and getItemDetails remain the same, 
+// they already use req.user which is set by requireAuth in their routes)
 
 exports.handleReportSubmission = async (req, res) => {
     const { title, description, category, location } = req.body;
@@ -72,7 +76,6 @@ exports.getItemDetails = async (req, res) => {
             return res.status(404).send(htmlRenderer.getBaseHtml('Not Found', '<h2>Item Not Found</h2>'));
         }
         
-        // NOTE: Implement htmlRenderer.renderItemDetails to display the claim form
         res.send(htmlRenderer.renderItemDetails(item, req.user)); 
 
     } catch (err) {
